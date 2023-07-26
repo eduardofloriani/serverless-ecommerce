@@ -8,7 +8,7 @@ import { ProductsAppLayersStack } from '../lib/productsAppLayers-stack';
 const app = new cdk.App();
 
 const env: cdk.Environment = {
-    account: '903777852297',
+    account: process.env.AWS_ACCOUNT_ID,
     region: 'us-east-1',
 };
 
