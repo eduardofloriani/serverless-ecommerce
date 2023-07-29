@@ -46,9 +46,9 @@ export class ProductAppStack extends cdk.Stack {
             productEventsLayerArn,
         );
 
-        const productEventsHandler = new lambdaNodeJS.NodejsFunction(this, 'ProductsEventsFunction', {
-            functionName: 'ProductsEventsFunction',
-            entry: 'lambda/products/productEventFunction.ts',
+        const productEventsHandler = new lambdaNodeJS.NodejsFunction(this, 'ProductEventsFunction', {
+            functionName: 'ProductEventsFunction',
+            entry: 'lambda/products/productEventsFunction.ts',
             handler: 'handler',
             runtime: lambda.Runtime.NODEJS_16_X,
             memorySize: 128,
