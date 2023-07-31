@@ -93,7 +93,7 @@ export class OrderRepository {
                     pk: email,
                     sk: orderId,
                 },
-                ReturnValues: 'ALL',
+                ReturnValues: 'ALL_OLD',
             })
             .promise();
 

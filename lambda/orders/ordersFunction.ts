@@ -9,7 +9,7 @@ import {
     PaymentType,
     ShippingType,
     CarrierType,
-} from './layers/ordersLayer/ordersApiLayer/nodejs/orderApi';
+} from '/opt/nodejs/ordersApiLayer';
 
 import * as AWSXray from 'aws-xray-sdk';
 
