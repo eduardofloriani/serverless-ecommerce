@@ -63,7 +63,7 @@ export class OrdersAppStack extends cdk.Stack {
         const orderEventsRepositoryLayer = lambda.LayerVersion.fromLayerVersionArn(
             this,
             'OrderEventsRepositoryLayerVersionArn',
-            orderEventsLayerArn,
+            orderEventsRepositoryLayerArn,
         );
 
         //Products Layer
