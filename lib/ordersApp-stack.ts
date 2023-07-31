@@ -3,6 +3,8 @@ import * as lambdaNodeJS from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
 
 import { Construct } from 'constructs';
 
@@ -43,6 +45,14 @@ export class OrdersAppStack extends cdk.Stack {
             ordersApiLayerArn,
         );
 
+        //Order Events Layer
+        const orderEventsLayerArn = ssm.StringParameter.valueForStringParameter(this, 'OrderEventsLayerVersionArn');
+        const orderEventsLayer = lambda.LayerVersion.fromLayerVersionArn(
+            this,
+            'OrderEventsLayerVersionArn',
+            orderEventsLayerArn,
+        );
+
         //Products Layer
         const productsLayerArn = ssm.StringParameter.valueForStringParameter(this, 'ProductsLayerVersionArn');
         const productsLayer = lambda.LayerVersion.fromLayerVersionArn(
@@ -50,6 +60,11 @@ export class OrdersAppStack extends cdk.Stack {
             'ProductsLayerVersionArn',
             productsLayerArn,
         );
+
+        const ordersTopic = new sns.Topic(this, 'OrderEventsTopic', {
+            displayName: 'Order events topic',
+            topicName: 'order-events',
+        });
 
         this.ordersHandler = new lambdaNodeJS.NodejsFunction(this, 'OrdersFunction', {
             functionName: 'OrdersFunction',
@@ -65,13 +80,15 @@ export class OrdersAppStack extends cdk.Stack {
             environment: {
                 PRODUCTS_DDB: props.productsDdb.tableName,
                 ORDERS_DDB: ordersDdb.tableName,
+                ORDER_EVENTS_TOPIC_ARN: ordersTopic.topicArn,
             },
-            layers: [ordersLayer, productsLayer, ordersApiLayer],
+            layers: [ordersLayer, productsLayer, ordersApiLayer, orderEventsLayer],
             tracing: lambda.Tracing.ACTIVE,
             insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0,
         });
 
         ordersDdb.grantReadWriteData(this.ordersHandler);
         props.productsDdb.grantReadData(this.ordersHandler);
+        ordersTopic.grantPublish(this.ordersHandler);
     }
 }
