@@ -103,7 +103,7 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
         try {
             const orderDeleted = await orderRepository.deleteOrder(email, orderId);
 
-            const eventResult = await sendOrderEvent(orderDeleted, OrderEventType.CREATED, lambdaRequestId);
+            const eventResult = await sendOrderEvent(orderDeleted, OrderEventType.DELETED, lambdaRequestId);
             console.log(`Order deleted event sent - OrderId: ${orderDeleted.sk} - MessageId: ${eventResult.MessageId}`);
 
             return {
@@ -147,6 +147,12 @@ function sendOrderEvent(order: Order, eventType: OrderEventType, lambdaRequestId
         .publish({
             TopicArn: orderEventsTopicArn,
             Message: JSON.stringify(envelope),
+            MessageAttributes: {
+                eventType: {
+                    DataType: 'String',
+                    StringValue: eventType,
+                },
+            },
         })
         .promise();
 }
