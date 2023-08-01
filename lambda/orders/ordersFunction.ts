@@ -11,6 +11,7 @@ import {
     CarrierType,
 } from '/opt/nodejs/ordersApiLayer';
 import { OrderEvent, OrderEventType, Envelope } from '/opt/nodejs/orderEventsLayer';
+import { v4 as uuid } from 'uuid';
 
 import * as AWSXray from 'aws-xray-sdk';
 
@@ -72,18 +73,21 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
         }
     } else if (method === 'POST') {
         console.log('POST /orders');
+
         const orderRequest = JSON.parse(event.body!) as OrderRequest;
         const products = await productRepository.getProductsByIds(orderRequest.productIds);
+
         if (products.length === orderRequest.productIds.length) {
             const order = buildOrder(orderRequest, products);
-            const orderCreated = await orderRepository.createOrder(order);
+            const orderCreatedPromise = orderRepository.createOrder(order);
 
-            const eventResult = await sendOrderEvent(orderCreated, OrderEventType.CREATED, lambdaRequestId);
-            console.log(`Order created event sent - OrderId: ${orderCreated.sk} - MessageId: ${eventResult.MessageId}`);
+            const eventResultPromise = sendOrderEvent(order, OrderEventType.CREATED, lambdaRequestId);
+            const results = await Promise.all([orderCreatedPromise, eventResultPromise]);
+            console.log(`Order created event sent - OrderId: ${order.sk} - MessageId: ${results[1].MessageId}`);
 
             return {
                 statusCode: 201,
-                body: JSON.stringify(convertOrderToOrderResponse(orderCreated)),
+                body: JSON.stringify(convertOrderToOrderResponse(order)),
             };
         } else {
             return {
@@ -188,6 +192,8 @@ function buildOrder(orderRequest: OrderRequest, products: Product[]): Order {
 
     const order: Order = {
         pk: orderRequest.email,
+        sk: uuid(),
+        createdAt: Date.now(),
         billing: {
             payment: orderRequest.payment,
             totalPrice: totalPrice,
