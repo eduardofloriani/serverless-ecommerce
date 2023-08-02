@@ -36,7 +36,7 @@ export class InvoicesAppLayerStack extends cdk.Stack {
 
         //Invoice WebSocket API Layer
         const invoiceWSConnectionLayer = new lambda.LayerVersion(this, 'InvoiceWSConnectionLayer', {
-            code: lambda.Code.fromAsset('lambda/invoices/layers/invoiceWSConnectionLayer'),
+            code: lambda.Code.fromAsset('lambda/invoices/layers/invoiceWSConnection'),
             compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
             layerVersionName: 'InvoiceWSConnectionLayer',
             removalPolicy: cdk.RemovalPolicy.RETAIN,

@@ -18,7 +18,7 @@ export class InvoiceWSApiStack extends cdk.Stack {
         //Invoice Transaction Layer
         const invoiceTransactionLayerArn = ssm.StringParameter.valueForStringParameter(
             this,
-            'InvoiceTransactionLayerArn',
+            'InvoiceTransactionLayerVersionArn',
         );
         const invoiceTransactionLayer = lambda.LayerVersion.fromLayerVersionArn(
             this,
