@@ -1,9 +1,9 @@
 import { Context, SNSMessage, SQSEvent } from 'aws-lambda';
-
-import * as AWSXray from 'aws-xray-sdk';
 import { Envelope, OrderEvent } from '/opt/nodejs/orderEventsLayer';
 import { AWSError, SES } from 'aws-sdk';
 import { PromiseResult } from 'aws-sdk/lib/request';
+
+import * as AWSXray from 'aws-xray-sdk';
 
 AWSXray.captureAWS(require('aws-sdk'));
 
