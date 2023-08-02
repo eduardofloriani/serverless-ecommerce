@@ -7,12 +7,39 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 import { Construct } from 'constructs';
 
 export class InvoiceWSApiStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id);
+
+        //Invoice Transaction Layer
+        const invoiceTransactionLayerArn = ssm.StringParameter.valueForStringParameter(
+            this,
+            'InvoiceTransactionLayerArn',
+        );
+        const invoiceTransactionLayer = lambda.LayerVersion.fromLayerVersionArn(
+            this,
+            'InvoiceTransaction',
+            invoiceTransactionLayerArn,
+        );
+
+        //Invoice Layer
+        const invoiceLayerArn = ssm.StringParameter.valueForStringParameter(this, 'InvoiceRepositoryLayerVersionArn');
+        const invoiceLayer = lambda.LayerVersion.fromLayerVersionArn(this, 'InvoiceRepositoryLayer', invoiceLayerArn);
+
+        //Invoice WebSocket API Layer
+        const invoiceWSConnectionLayerArn = ssm.StringParameter.valueForStringParameter(
+            this,
+            'InvoiceWSConnectionLayerVersionArn',
+        );
+        const invoiceWSConenctionLayer = lambda.LayerVersion.fromLayerVersionArn(
+            this,
+            'InvoiceWSConnectionLayer',
+            invoiceWSConnectionLayerArn,
+        );
 
         //Invoice and invoice transaction DDB
         const invoicesDdb = new dynamodb.Table(this, 'InvoicesDdb', {
@@ -116,6 +143,7 @@ export class InvoiceWSApiStack extends cdk.Stack {
                 BUCKET_NAME: bucket.bucketName,
                 INVOICE_WSAPI_ENDPOINT: wsApiEndpoint,
             },
+            layers: [invoiceTransactionLayer, invoiceWSConenctionLayer],
             tracing: lambda.Tracing.ACTIVE,
         });
         const invoicesDdbWriteTransactionPolicy = new iam.PolicyStatement({
@@ -154,6 +182,7 @@ export class InvoiceWSApiStack extends cdk.Stack {
                 INVOICES_DDB: invoicesDdb.tableName,
                 INVOICE_WSAPI_ENDPOINT: wsApiEndpoint,
             },
+            layers: [invoiceLayer, invoiceTransactionLayer, invoiceWSConenctionLayer],
             tracing: lambda.Tracing.ACTIVE,
         });
         invoicesDdb.grantReadWriteData(invoiceImportHandler);
@@ -167,9 +196,9 @@ export class InvoiceWSApiStack extends cdk.Stack {
         webSocketApi.grantManageConnections(invoiceImportHandler);
 
         //Cancel import handler
-        const cancelImportHandler = new lambdaNodeJS.NodejsFunction(this, 'InvoiceCancelImportHandler', {
-            functionName: 'InvoiceCancelImportHandler',
-            entry: 'lambda/invoices/invoiceCancelImportHandler.ts',
+        const cancelImportHandler = new lambdaNodeJS.NodejsFunction(this, 'CancelImportHandler', {
+            functionName: 'CancelImportHandler',
+            entry: 'lambda/invoices/cancelImportHandler.ts',
             handler: 'handler',
             runtime: lambda.Runtime.NODEJS_16_X,
             memorySize: 128,
@@ -182,6 +211,7 @@ export class InvoiceWSApiStack extends cdk.Stack {
                 INVOICES_DDB: invoicesDdb.tableName,
                 INVOICE_WSAPI_ENDPOINT: wsApiEndpoint,
             },
+            layers: [invoiceTransactionLayer, invoiceWSConenctionLayer],
             tracing: lambda.Tracing.ACTIVE,
         });
         const invoicesDdbReadWriteTransactionPolicy = new iam.PolicyStatement({
